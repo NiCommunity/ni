@@ -162,8 +162,21 @@ def _als_user_step(
     This function allows one to recompute embedding for one particular user,
     given ratings that he gave and items_embeddings of those items, that the user has rated
     """
-    # your code here
-    ...
+    # V - items_embeddings
+    # lamb - reg_coef
+    # r - user_ratings
+
+    lamb=reg_coef
+    r=user_ratings
+    V=items_embeddings
+    V_t=V.T
+    VV = V_t@V
+    dim=VV.shape[0]
+    I=np.eye(dim)
+
+    u=np.linalg.inv((V_t @ V + lamb*I)) @ V_t @ r
+
+    return u
 
 def _als_item_step(
     users_embeddings: NDArray[float],
@@ -179,7 +192,18 @@ def _als_item_step(
     given ratings that we have for this item from different users and users_embeddings of those users, who have rated this item
     """
     # your code here
-    ...
+    
+    lamb=reg_coef
+    r=items_ratings
+    U=users_embeddings
+    U_t=U.T
+    UU=U_t @ U
+    dim=UU.shape[0]
+    I=np.eye(dim)
+
+    v = np.linalg.inv(U_t @ U + lamb*I)@U_t@r
+
+    return v
     
 
 UserID = Union[str, int]
