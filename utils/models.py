@@ -166,9 +166,9 @@ def _als_user_step(
     # lamb - reg_coef
     # r - user_ratings
 
-    lamb=reg_coef
-    r=user_ratings
-    V=items_embeddings
+    lamb=float(reg_coef)
+    r=user_ratings.astype(float)
+    V=items_embeddings.astype(float)
     V_t=V.T
     VV = V_t@V
     dim=VV.shape[0]
@@ -193,9 +193,9 @@ def _als_item_step(
     """
     # your code here
     
-    lamb=reg_coef
-    r=items_ratings
-    U=users_embeddings
+    lamb=float(reg_coef)
+    r=items_ratings.astype(float)
+    U=users_embeddings.astype(float)
     U_t=U.T
     UU=U_t @ U
     dim=UU.shape[0]
