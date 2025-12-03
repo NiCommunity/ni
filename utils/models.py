@@ -154,26 +154,29 @@ def _als_user_step(
     user_ratings: NDArray[float],
     reg_coef: float,
 ) -> NDArray[float]:
+    """
+    ALS model (https://yadi.sk/i/7ZONA2kIqROfRQ) consists of 2 steps: 
+        1) recompute users embeddings
+        2) recompute items embeddings
     
-    # КРИТИЧЕСКИ ВАЖНО: принудительная конвертация
-    V = np.asarray(items_embeddings, dtype=np.float64).copy()
-    r = np.asarray(user_ratings, dtype=np.float64).copy()
-    
-    # Проверка
-    if not np.isfinite(V).all() or not np.isfinite(r).all():
-        raise ValueError("Матрица содержит нечисловые значения")
-    
-    emb_dim = V.shape[1]
-    
-    # Вычисления
-    V_t = V.T
-    A = V_t @ V + float(reg_coef) * np.eye(emb_dim, dtype=np.float64)
-    
-    # inv должен работать теперь
-    A_inv = np.linalg.inv(A)
-    b = V_t @ r
-    
-    return A_inv @ b
+    This function allows one to recompute embedding for one particular user,
+    given ratings that he gave and items_embeddings of those items, that the user has rated
+    """
+    # V - items_embeddings
+    # lamb - reg_coef
+    # r - user_ratings
+
+    lamb=reg_coef
+    r=user_ratings
+    V=items_embeddings
+    V_t=V.T
+    VV = V_t@V
+    dim=VV.shape[0]
+    I=np.eye(dim)
+
+    u=np.linalg.inv((V_t @ V + lamb*I)) @ V_t @ r
+
+    return u
 
 def _als_item_step(
     users_embeddings: NDArray[float],
