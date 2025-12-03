@@ -279,5 +279,82 @@ class ALS:
         IMPORTANT NOTE: first recompute users embeddings, then items embeddings
         """
         # your code here
+
+        #userId  trackId  rating
+        #    0       1     101     5.0    
+        #    1       1     103     3.0
+        #    2       2     102     4.0
+
+        #interactions - первый столбец ID юзера, второй - ID трека, третий - оценка трека этим юзером. 
+
+        np.random.seed(self.random_seed) #Установили сид
+
+        unique_users=interactions["user_col"].unique() #Взяли столбец со всеми уникальными юзерами
+        unique_items=interactions["item_col"].unique() #Взяли столбец со всеми уникальными треками
+
+        #Если эмбеддинги еще не инициализированы, то надо их задать случайным образом.
+        if embeddings_initialized is False:
+            self.users_embeddings={} #Создаем пустые словари т.к. они изначально = None
+            self.items_embeddings={}
+
+            for i in unique_users: #Создаем эмбеддинги для юзеров
+                self.users_embeddings[i]=np.random.normal(loc=0, scale=0.1, size=self.embeddings_dim)
+            for j in unique_items: #Создаем эмбеддинги для треков
+                self.items_embeddings[j]=np.random.normal(loc=0, scale=0.1, size=self.embeddings_dim)
+
+        #Для каждого юзера сделаем словари следующего вида - {юзер:треки который он прослушал} и {юзер: рейтинг которые он поставил}
+
+        user_tracks={} # user - треки которые он слушал
+        user_ratings={} #user - рейтинг треков которые он слушал
+
+        for user, group in interactions.groupby("user_col"):
+            user_tracks[user]=group["item_col"].tolist()
+            user_ratings[user]=group["rating_col"].tolist()
+
+        #Для каждого трека сделаем словари следующего вида - {трек: юзер которые слушали этот трек} и {трек: рейтинги которые поставили этому треку}
+
+        track_users={}
+        track_ratings={}
+
+        for track, group in interactions.groupby("item_col"):
+            track_users[track]=group["user_col"].tolist()
+            track_ratings[track]=group["rating_col"].tolist()
+
+
+
+        for i in range(epochs): #Повторяем алгоритм ALS -  epochs раз
+            
+            if verbose is True:
+                print(f"Эпоха {i+1} из {epochs}")
+
+            #Обновим эмбеддинги для юзеров.
+
+            for user in user_tracks: #Пробегаемся по каждому юзеру и берем  именно его треки
+                current_tracks=user_tracks[user] #Для данного юзера берем именно егошние треки
+                current_tracks_embeddings=[] #Будем заполнять этот список эмбеддингами этих треков
+                for track in current_tracks: #Пробегаемся по каждому треку. 
+                    current_tracks_embeddings.append(self.items_embeddings[track]) #Для каждого трека добавляем его эмбеддинги
+                current_tracks_embeddings=np.array(current_tracks_embeddings)
+
+                current_ratings=user_ratings[user] #Берем рейтинги которые поставил именно этот пользователь
+                current_ratings=np.array(current_ratings)
+
+                self.users_embeddings[user]=_als_user_step(current_tracks_embeddings, current_ratings, self.reg_coef)
+            
+
+            #Обновим эмбеддинги для треков
+            for track in track_users: #Пробегаемся по каждому треку и берем юзеров которые слушали этот трек
+                current_users=track_users[track] #Берем юзеров которые соответствуют именно данному треку
+                current_users_embeddings=[] #Здесь будем хранить эмбеддинги этих юзеров
+                for user in current_users: #Пробегаемся по каждому юзеру
+                    current_users_embeddings.append(self.users_embeddings[user]) #Добавляем эмбеддинги каждого юзера
+                current_users_embeddings=np.array(current_users_embeddings)
+
+                current_ratings=track_ratings[track]
+                current_ratings=np.array(current_ratings)
+
+                self.items_embeddings[track]=_als_item_step(current_users_embeddings, current_ratings, self.reg_coef)
+            
+            
         return self
 
